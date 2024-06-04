@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Visite Aziende</title>
+    <!-- Collegamento al foglio di stile Bootstrap -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Stili CSS personalizzati -->
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        h1 {
+            color: #007bff;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 8px 8px 0 0;
+            padding: 15px;
+        }
+        .card-title {
+            color: #007bff;
+        }
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Titolo della pagina -->
+        <h1 class="text-center">Gestione Visite Aziende</h1>
+        <!-- Form per il caricamento del file CSV -->
+        <form id="upload-form" class="mb-4">
+            <div class="form-group">
+                <label for="csvFile">Carica file CSV:</label>
+                <input type="file" class="form-control-file" id="csvFile" accept=".csv" required>
+            </div>
+            <!-- Pulsante per caricare e visualizzare i dati -->
+            <button type="submit" class="btn btn-primary btn-block">Carica e Visualizza</button>
+        </form>
+        <!-- Contenitore per i risultati -->
+        <div id="results">
+            <!-- Risultati verranno visualizzati qui -->
+        </div>
+    </div>
+
+    <script>
+        // Event listener per il form di caricamento
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Per favore, seleziona un file CSV.');
+                return;
+            }
+
+            const reader = new FileReader();
+            // Funzione chiamata quando il file è stato caricato
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processCSV(text);
+            };
+            reader.readAsText(file);
+        });
+
+        // Funzione per organizzare il contenuto del file CSV
+        function processCSV(data) {
+            const lines = data.split('\n');
+            const header = lines.shift();
+            const visite = [];
+
+            // Ciclo attraverso ogni riga del file CSV
+            lines.forEach(line => {
+                if (line.trim() === '') return;
+                const fields = line.split(',');
+                // Creazione di un oggetto "visita" per ogni riga
+                const visita = {
+                    data: fields[0],
+                    nome_azienda: fields[1],
+                    categoria: fields[2],
+                    sottocategoria: fields[3],
+                    descrizione: fields[4],
+                    importo: parseFloat(fields[5])
+                };
+                visite.push(visita); // Aggiunta della visita all'array
+            });
+
+            const aziende = {};
+
+            // Raggruppamento delle visite per azienda e calcolo del totale
+            visite.forEach(visita => {
+                if (!aziende[visita.nome_azienda]) {
+                    aziende[visita.nome_azienda] = {
+                        nome: visita.nome_azienda,
+                        visite: [],
+                        totale: 0
+                    };
+                }
+                aziende[visita.nome_azienda].visite.push(visita);
+                aziende[visita.nome_azienda].totale += visita.importo;
+            });
+
+            displayResults(aziende); // Visualizzazione dei risultati
+        }
+
+        // Funzione per visualizzare i risultati nella pagina
+        function displayResults(aziende) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            // Iterazione attraverso ogni azienda e creazione di una card per ogni una
+            for (const nome in aziende) {
+                const azienda = aziende[nome];
+                const card = document.createElement('div');
+                card.className = 'card mb-3';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h2>${azienda.nome}</h2>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">Numero di visite: ${azienda.visite.length}</h5>
+                        <h5 class="card-title">Totale: €${azienda.totale.toFixed(2)}</h5>
+                        <!-- Elenco delle visite per l'azienda -->
+                        <ul class="list-group list-group-flush">
+                            ${azienda.visite.map((visita, index) => `
+                                <li class="list-group-item">
+                                    <strong>${index + 1}.</strong> ${visita.data}, ${visita.categoria}, €${visita.importo.toFixed(2)}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+                resultsDiv.appendChild(card); // Aggiunta della card alla pagina
+            }
+        }
+    </script>
+</body>
+</html>
